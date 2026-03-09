@@ -1,0 +1,21 @@
+[submodule "map/src/Personal/DialogQueue"]
+	path = map/src/Personal/DialogQueue
+	url = https://github.com/InsanityAI/DialogQueue.git
+[submodule "map/src/Personal/ReactiveX"]
+	path = map/src/Personal/ReactiveX
+	url = https://github.com/InsanityAI/ReactiveX.git
+[submodule "map/src/Personal/MissileSystem"]
+	path = map/src/Personal/MissileSystem
+	url = https://github.com/InsanityAI/MissileSystem.git
+[submodule "map/src/Personal/TerrainIO"]
+	path = map/src/Personal/TerrainIO
+	url = https://github.com/InsanityAI/TerrainIO.git
+[submodule "map/src/Personal/Cache"]
+	path = map/src/Personal/Cache
+	url = https://github.com/InsanityAI/Cache.git
+[submodule "map/src/Personal/ChatSystem"]
+	path = map/src/Personal/ChatSystem
+	url = https://github.com/InsanityAI/ChatSystem.git
+[submodule "map/src/Personal/TaskProcessor"]
+	path = map/src/Personal/TaskProcessor
+	url = https://github.com/InsanityAI/TaskProcessor.git
