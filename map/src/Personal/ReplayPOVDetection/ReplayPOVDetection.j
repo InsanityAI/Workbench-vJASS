@@ -36,7 +36,6 @@ library ReplayPOVDetection initializer init requires /**
     function GetReplayPlayer takes nothing returns player
         if GetGameStatus() != GAME_STATUS_REPLAY then
             return GetLocalPlayer()
-            UnitAlive
         endif
 
         set somethingWrong = true
