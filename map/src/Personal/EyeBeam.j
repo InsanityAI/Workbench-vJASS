@@ -52,6 +52,7 @@ library EyeBeam initializer onInit requires Table, TimerUtils
         integer effectTickCounter
         integer deletedEffectCount
         integer deletedEffectTickCounter
+        boolean beamStopped
         Table lightningData
         Table effectData
 
@@ -157,7 +158,7 @@ library EyeBeam initializer onInit requires Table, TimerUtils
             set this.beamStartY = this.beamStartY + this.beamDeltaY
             set this.dissipateDistance = this.dissipateDistance + this.beamDistancePerTick
 
-            if this.dissipateDistance >= this.beamDistance then
+            if this.dissipateDistance >= this.beamDistance and this.beamStopped then
                 call this.destroy()
             endif
         endmethod
@@ -176,6 +177,10 @@ library EyeBeam initializer onInit requires Table, TimerUtils
         public method stop takes nothing returns nothing
             call PauseTimer(this.beamMovement)
             call this.destroyBeamVisual()
+            set this.beamStopped = true
+            if this.dissipateDistance >= this.beamDistance then
+                call this.destroy()
+            endif
         endmethod
 
         private static method StopBeam takes nothing returns nothing
@@ -216,6 +221,7 @@ library EyeBeam initializer onInit requires Table, TimerUtils
             set this.effectTickCounter = 0
             set this.deletedEffectCount = 0
             set this.deletedEffectTickCounter = 0
+            set this.beamStopped = false
 
             set this.damageGroup = CreateGroup()
             set this.beamMovement = NewTimerEx(this)
