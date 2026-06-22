@@ -46,6 +46,7 @@ library EyeBeam initializer onInit requires Table, TimerUtils
         timer beamMovement
         timer damageTimer
         timer dissipationTimer
+        timer beamDurationTimer
         group damageGroup
         integer effectCount
         integer effectTickCounter
@@ -94,7 +95,7 @@ library EyeBeam initializer onInit requires Table, TimerUtils
                 exitwhen index >= endIndex
                 set target = BlzGroupUnitAt(tempGroup, index)
 
-                if target != this.caster then
+                if IsUnitEnemy(target, GetOwningPlayer(this.caster)) then
                     call this.initialUnitCollisionHandler(target)
                 endif
 
@@ -118,7 +119,7 @@ library EyeBeam initializer onInit requires Table, TimerUtils
                 exitwhen index >= endIndex
                 set target = BlzGroupUnitAt(tempGroup, index)
 
-                if not IsUnitInGroup(target, this.damageGroup) and target != this.caster and this.isTargetInRange(GetUnitX(target), GetUnitY(target)) then
+                if not IsUnitInGroup(target, this.damageGroup) and IsUnitEnemy(target, GetOwningPlayer(this.caster)) and this.isTargetInRange(GetUnitX(target), GetUnitY(target)) then
                     call GroupAddUnit(this.damageGroup, target)
                     call this.initialUnitCollisionHandler(target)
                 endif
@@ -142,7 +143,7 @@ library EyeBeam initializer onInit requires Table, TimerUtils
                 exitwhen index >= endIndex
                 set target = BlzGroupUnitAt(tempGroup, index)
 
-                if target != this.caster and this.isTargetInRange(GetUnitX(target), GetUnitY(target)) then
+                if IsUnitEnemy(target, GetOwningPlayer(this.caster)) and this.isTargetInRange(GetUnitX(target), GetUnitY(target)) then
                     call this.tickedUnitCollisionHandler(target)
                 endif
 
@@ -168,12 +169,21 @@ library EyeBeam initializer onInit requires Table, TimerUtils
 
         private static method StartDissipating takes nothing returns nothing
             local thistype this = GetTimerData(GetExpiredTimer())
-            call this.stop()
             call TimerStart(this.dissipationTimer, BEAM_MOVEMENT_TICK, true, function thistype.DissipateTick)
             call this.dissipate()
         endmethod
 
-        public static method create takes unit caster, real initialDamage, real damagePerTick, real secondsPerTick, real beamStaticDamageSecondsPerTick, real duration, real startX, real startY, real angle, real width, real maxDistance, real beamMS, real casterHeightOffset, string lightningCode, integer lightningCount, string lingeringEffectModel, integer effectEveryXTicks, real lingeringEffectScale, real lingeringEffectTimescale returns thistype
+        public method stop takes nothing returns nothing
+            call PauseTimer(this.beamMovement)
+            call this.destroyBeamVisual()
+        endmethod
+
+        private static method StopBeam takes nothing returns nothing
+            local thistype this = GetTimerData(GetExpiredTimer())
+            call this.stop()
+        endmethod
+
+        public static method create takes unit caster, real initialDamage, real damagePerTick, real secondsPerTick, real beamStaticDamageSecondsPerTick, real duration, real startX, real startY, real angle, real width, real maxDistance, real beamMS, real casterHeightOffset, string lightningCode, integer lightningCount, string lingeringEffectModel, integer effectEveryXTicks, real lingeringEffectScale, real lingeringEffectTimescale, real lingeringEffectDuration returns thistype
             local thistype this = thistype.allocate()
             set this.caster = caster
             set this.beamStartX = startX
@@ -217,8 +227,11 @@ library EyeBeam initializer onInit requires Table, TimerUtils
             endif
 
             set this.dissipationTimer = NewTimerEx(this)
-            call TimerStart(this.dissipationTimer, duration, false, function thistype.StartDissipating)
+            call TimerStart(this.dissipationTimer, lingeringEffectDuration, false, function thistype.StartDissipating)
             
+            set this.beamDurationTimer = NewTimerEx(this)
+            call TimerStart(this.beamDurationTimer, duration, false, function thistype.StopBeam)
+
             set this.lightningData = Table.create()
             set this.effectData = Table.create()
             set index = 0
@@ -231,11 +244,6 @@ library EyeBeam initializer onInit requires Table, TimerUtils
             return this
         endmethod
 
-        public method stop takes nothing returns nothing
-            call PauseTimer(this.beamMovement)
-            call this.destroyBeamVisual()
-        endmethod
-
         public method destroy takes nothing returns nothing
             call PauseTimer(this.beamMovement)
             call ReleaseTimer(this.beamMovement)
@@ -243,6 +251,8 @@ library EyeBeam initializer onInit requires Table, TimerUtils
             call ReleaseTimer(this.damageTimer)
             call PauseTimer(this.dissipationTimer)
             call ReleaseTimer(this.dissipationTimer)
+            call PauseTimer(this.beamDurationTimer)
+            call ReleaseTimer(this.beamDurationTimer)
             call DestroyGroup(this.damageGroup)
             set this.caster = null
             call this.lightningData.flush()
@@ -251,13 +261,13 @@ library EyeBeam initializer onInit requires Table, TimerUtils
 
         public method initialUnitCollisionHandler takes unit u returns nothing
             set udg_EyeBeamCausedDamage = true
-            call UnitDamageTarget(this.caster, target, this.beamInitialDamage, false, false, ATTACK_TYPE_MAGIC, DAMAGE_TYPE_MAGIC, WEAPON_TYPE_WHOKNOWS)
+            call UnitDamageTarget(this.caster, target, this.beamInitialDamage, false, false, ATTACK_TYPE_NORMAL, DAMAGE_TYPE_MAGIC, WEAPON_TYPE_WHOKNOWS)
             set udg_EyeBeamCausedDamage = false
         endmethod
 
         public method tickedUnitCollisionHandler takes unit u returns nothing
             set udg_EyeBeamCausedLingeringDamage = true
-            call UnitDamageTarget(this.caster, target, this.damagePerTick, false, false, ATTACK_TYPE_MAGIC, DAMAGE_TYPE_MAGIC, WEAPON_TYPE_WHOKNOWS)
+            call UnitDamageTarget(this.caster, target, this.damagePerTick, false, false, ATTACK_TYPE_NORMAL, DAMAGE_TYPE_MAGIC, WEAPON_TYPE_WHOKNOWS)
             set udg_EyeBeamCausedLingeringDamage = false
         endmethod
 
